@@ -1,0 +1,24 @@
+{
+  "agent_name": "Email Summary Agent",
+  "agent_id": "698e14057d01c601c90dc833",
+  "description": "Fetches emails from Gmail, analyzes content to extract key information (sender, subject, urgency, action items), generates a concise summary, and delivers it to the specified Slack channel",
+  "agent_type": "json",
+  "accessor": "result",
+  "auto_generated": true,
+  "response_schema": {
+    "result": {
+      "summary": "string",
+      "emailCount": "number",
+      "slackChannelSent": "string",
+      "timestamp": "string"
+    }
+  },
+  "example_response": {
+    "result": {
+      "summary": "The complete formatted email summary text including key information, urgency levels, and action items",
+      "emailCount": 0,
+      "slackChannelSent": "The Slack channel ID or name where the summary was posted",
+      "timestamp": "ISO 8601 timestamp of when the summary was generated"
+    }
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "workflow": {
+    "name": "Email Summary to Slack",
+    "description": "Fetches recent emails from Gmail, analyzes and summarizes key information, and sends formatted summary to Slack",
+    "pattern": "single_agent",
+    "nodes": [
+      {
+        "id": "input_node",
+        "type": "Input",
+        "label": "User Request",
+        "nodeCategory": "input"
+      },
+      {
+        "id": "email_summary_agent",
+        "type": "Agent",
+        "label": "Email Summary Agent",
+        "nodeCategory": "agent",
+        "agent_id": "698e14057d01c601c90dc833"
+      },
+      {
+        "id": "output_node",
+        "type": "Output",
+        "label": "Summary Result",
+        "nodeCategory": "end"
+      }
+    ],
+    "edges": [
+      {
+        "source": "input_node",
+        "target": "email_summary_agent"
+      },
+      {
+        "source": "email_summary_agent",
+        "target": "output_node"
+      }
+    ]
+  },
+  "agents": [
+    {
+      "agent_id": "698e14057d01c601c90dc833",
+      "name": "Email Summary Agent",
+      "description": "Fetches emails from Gmail, analyzes content to extract key information (sender, subject, urgency, action items), generates a concise summary, and delivers it to the specified Slack channel",
+      "role": "Email Analysis and Communication Specialist",
+      "provider": "OpenAI",
+      "model": "openai/gpt-4.1",
+      "temperature": 0.3,
+      "top_p": 1,
+      "tools": [
+        {
+          "tool_name": "gmail",
+          "tool_source": "composio",
+          "actions": ["GMAIL_FETCH_EMAILS"],
+          "provider_uuid": "6980d819100ddff45dec4e80"
+        },
+        {
+          "tool_name": "slack",
+          "tool_source": "composio",
+          "actions": ["SLACK_CHAT_POST_MESSAGE"],
+          "provider_uuid": "6980d819100ddff45dec4e81"
+        }
+      ],
+      "response_schema": {
+        "result": {
+          "summary": "string",
+          "emailCount": "number",
+          "slackChannelSent": "string",
+          "timestamp": "string"
+        }
+      }
+    }
+  ],
+  "integrations": [
+    {
+      "name": "Gmail",
+      "tool_source": "composio",
+      "provider_uuid": "6980d819100ddff45dec4e80",
+      "actions": ["GMAIL_FETCH_EMAILS"],
+      "user_inputs_required": ["Number of emails to fetch", "Time range (optional)"]
+    },
+    {
+      "name": "Slack",
+      "tool_source": "composio",
+      "provider_uuid": "6980d819100ddff45dec4e81",
+      "actions": ["SLACK_CHAT_POST_MESSAGE"],
+      "user_inputs_required": ["Slack channel ID/name"]
+    }
+  ]
+}
