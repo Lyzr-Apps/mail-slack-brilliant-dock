@@ -287,18 +287,79 @@ export default function Home() {
     setEmailsError(null)
 
     try {
-      const message = 'Fetch my last 10 emails from Gmail. Return them in a structured format with sender name, sender email, subject, snippet, date, and email ID.'
+      const message = `Please fetch my last 10 emails from Gmail using the GMAIL_FETCH_EMAILS action with maxResults=10.
+
+For each email, extract and return:
+- id: the email ID
+- sender_name: the sender's name
+- sender_email: the sender's email address
+- subject: the email subject line
+- snippet: a preview of the email body
+- date: the date/time received
+
+Return the data in this exact JSON format:
+{
+  "emails": [
+    {
+      "id": "email_id",
+      "sender_name": "Name",
+      "sender_email": "email@example.com",
+      "subject": "Subject line",
+      "snippet": "Email preview text",
+      "date": "2026-02-12T10:30:00Z"
+    }
+  ]
+}`
+
       const result = await callAIAgent(message, AGENT_ID)
+
+      // Debug logging
+      console.log('Email fetch result:', result)
+      console.log('Agent response:', result?.response)
+      console.log('Agent result:', result?.response?.result)
 
       if (result.success) {
         const agentData = result?.response?.result
-        const emailsData = Array.isArray(agentData?.emails) ? agentData.emails : []
+
+        // Try multiple paths to find the emails array
+        let emailsData: Email[] = []
+
+        if (Array.isArray(agentData?.emails)) {
+          emailsData = agentData.emails
+        } else if (Array.isArray(agentData)) {
+          emailsData = agentData
+        } else if (agentData && typeof agentData === 'object') {
+          // Try to find any array in the result
+          const values = Object.values(agentData)
+          const arrayValue = values.find(v => Array.isArray(v))
+          if (arrayValue) {
+            emailsData = arrayValue as Email[]
+          }
+        }
+
+        // Transform the data to ensure it has the right structure
+        emailsData = emailsData.map((email: any) => ({
+          id: email.id || email.messageId || email.email_id || String(Math.random()),
+          sender_name: email.sender_name || email.senderName || email.from_name || email.from || 'Unknown',
+          sender_email: email.sender_email || email.senderEmail || email.from_email || email.email || '',
+          subject: email.subject || email.title || 'No Subject',
+          snippet: email.snippet || email.preview || email.body || email.content || '',
+          date: email.date || email.timestamp || email.received || new Date().toISOString(),
+        }))
+
         setEmails(emailsData)
+
         if (emailsData.length === 0) {
-          setEmailsError('No emails found')
+          // Check if there's a message in the response
+          const responseMessage = result?.response?.message || agentData?.message || agentData?.text
+          if (responseMessage) {
+            setEmailsError(`Agent response: ${responseMessage}`)
+          } else {
+            setEmailsError('No emails found. The agent may need Gmail OAuth authorization. Check browser console for details.')
+          }
         }
       } else {
-        setEmailsError(result.error || 'Failed to fetch emails')
+        setEmailsError(result.error || 'Failed to fetch emails. Please ensure Gmail is connected.')
       }
     } catch (err) {
       setEmailsError(err instanceof Error ? err.message : 'Failed to fetch emails')
@@ -312,18 +373,73 @@ export default function Home() {
     setChannelsError(null)
 
     try {
-      const message = 'Fetch all my Slack channels. Return them with channel name, ID, member count, and whether they are private.'
+      const message = `Please fetch all my Slack channels using the appropriate Slack API action (like SLACK_CONVERSATIONS_LIST or similar).
+
+For each channel, extract and return:
+- id: the channel ID
+- name: the channel name (without # prefix)
+- member_count: number of members (if available)
+- is_private: whether the channel is private (boolean)
+
+Return the data in this exact JSON format:
+{
+  "channels": [
+    {
+      "id": "C12345",
+      "name": "general",
+      "member_count": 50,
+      "is_private": false
+    }
+  ]
+}`
+
       const result = await callAIAgent(message, AGENT_ID)
+
+      // Debug logging
+      console.log('Channels fetch result:', result)
+      console.log('Agent response:', result?.response)
+      console.log('Agent result:', result?.response?.result)
 
       if (result.success) {
         const agentData = result?.response?.result
-        const channelsData = Array.isArray(agentData?.channels) ? agentData.channels : []
+
+        // Try multiple paths to find the channels array
+        let channelsData: SlackChannel[] = []
+
+        if (Array.isArray(agentData?.channels)) {
+          channelsData = agentData.channels
+        } else if (Array.isArray(agentData)) {
+          channelsData = agentData
+        } else if (agentData && typeof agentData === 'object') {
+          // Try to find any array in the result
+          const values = Object.values(agentData)
+          const arrayValue = values.find(v => Array.isArray(v))
+          if (arrayValue) {
+            channelsData = arrayValue as SlackChannel[]
+          }
+        }
+
+        // Transform the data to ensure it has the right structure
+        channelsData = channelsData.map((channel: any) => ({
+          id: channel.id || channel.channel_id || channel.channelId || String(Math.random()),
+          name: channel.name || channel.channel_name || channel.channelName || 'unknown',
+          member_count: channel.member_count || channel.memberCount || channel.num_members || undefined,
+          is_private: channel.is_private ?? channel.isPrivate ?? channel.private ?? false,
+        }))
+
         setSlackChannels(channelsData)
+
         if (channelsData.length === 0) {
-          setChannelsError('No channels found')
+          // Check if there's a message in the response
+          const responseMessage = result?.response?.message || agentData?.message || agentData?.text
+          if (responseMessage) {
+            setChannelsError(`Agent response: ${responseMessage}`)
+          } else {
+            setChannelsError('No channels found. The agent may need Slack OAuth authorization. Check browser console for details.')
+          }
         }
       } else {
-        setChannelsError(result.error || 'Failed to fetch channels')
+        setChannelsError(result.error || 'Failed to fetch channels. Please ensure Slack is connected.')
       }
     } catch (err) {
       setChannelsError(err instanceof Error ? err.message : 'Failed to fetch channels')
